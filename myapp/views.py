@@ -3,14 +3,14 @@ from django.template import RequestContext
 from myapp.forms import UploadFileForm
 from PIL import Image, ImageOps,ImageFilter
 
+from myapp.s3upload import upload_to_s3_bucket_root
+from myapp.settings import PROCESSED_IMAGES_FOLDER, UNPROCESSED_IMAGES_FOLDER, S3_UNPROCESSED_FOLDER, S3_PROCESSED_FOLDER
+
 
 def applyfilter(filename, preset):
-	inputfile = '/home/arshdeep/django/imagepro/media/' + filename
-
-	f=filename.split('.')
-	outputfilename = f[0] + '-out.jpg'
-
-	outputfile = '/home/arshdeep/django/imagepro/myapp/templates/static/output/' + outputfilename
+	
+	inputfile = UNPROCESSED_IMAGES_FOLDER + filename
+	outputfile = PROCESSED_IMAGES_FOLDER + filename
 
 	im = Image.open(inputfile)
 	if preset=='gray':
@@ -39,24 +39,39 @@ def applyfilter(filename, preset):
 		im = im.convert("RGB")
 
 	im.save(outputfile)
-	return outputfilename
+	return outputfile
 
 def handle_uploaded_file(f,preset):
-	uploadfilename='media/' + f.name
-	with open(uploadfilename, 'wb+') as destination:
+	
+	unprocessed_file = UNPROCESSED_IMAGES_FOLDER + f.name
+	print("Trying to upload unprocessed file to: " + unprocessed_file)
+	with open(unprocessed_file, 'wb+') as destination:
 		for chunk in f.chunks():
 			destination.write(chunk)
 
-	outputfilename=applyfilter(f.name, preset)
-	return outputfilename
+	print("Applying filter to file")
+	processed_file = applyfilter(f.name, preset)
+
+	print("Trying to upload original and filtered images to S3...")
+	original_file_location = upload_to_s3_bucket_root(UNPROCESSED_IMAGES_FOLDER, f.name, S3_UNPROCESSED_FOLDER, cleanup_local_copy=1)
+	filtered_file_location = upload_to_s3_bucket_root(PROCESSED_IMAGES_FOLDER, f.name, S3_PROCESSED_FOLDER, cleanup_local_copy=1)
+
+	print("Cleanup local copies")
+
+	return filtered_file_location
 
 def home(request):
 	if request.method == 'POST':
 		form = UploadFileForm(request.POST, request.FILES)
 		if form.is_valid():
+			print(request.POST['preset'])
+			print(request.FILES)
 			preset=request.POST['preset']
-			outputfilename = handle_uploaded_file(request.FILES['myfilefield'],preset)
-			return render(request, 'process.html',{'outputfilename': outputfilename}) #, context_instance=RequestContext(request))
+			output_file_link = handle_uploaded_file(request.FILES['myfilefield'],preset)
+			print(output_file_link)
+			return render(request, 'process.html',{'output_file_link': output_file_link}) #, context_instance=RequestContext(request))
+		else:
+			print("form was invalid")
 	else:
 		form = UploadFileForm() 
 	return render(request, 'index.html', {'form': form}) #, context_instance=RequestContext(request))

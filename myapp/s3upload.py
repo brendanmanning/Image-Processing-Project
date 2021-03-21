@@ -23,45 +23,39 @@ SOFTWARE.
 '''
 
 import os
-import boto.s3
+import boto3
 
-conn = boto.connect_s3(aws_access_key_id='<enter>',
-     aws_secret_access_key='<enter>')
+from myapp.settings import BUCKET_NAME
 
-def percent_cb(complete, total):
-    print ('.')
+s3 = boto3.resource('s3') 
+s3_client = boto3.client('s3')
 
-def upload_to_s3_bucket_path(bucketname, path, filename):
-	mybucket = conn.get_bucket(bucketname)
-	fullkeyname=os.path.join(path,filename)
-	key = mybucket.new_key(fullkeyname)
-	key.set_contents_from_filename(filename, cb=percent_cb, num_cb=10)
-	#key.make_public(recursive=False)
+bucket = s3.Bucket(BUCKET_NAME)
 
-def upload_to_s3_bucket_root(bucketname, filename):
-	mybucket = conn.get_bucket(bucketname)
-	key = mybucket.new_key(filename)
-	key.set_contents_from_filename(filename, cb=percent_cb, num_cb=10)
+def upload_to_s3_bucket_root(source_file_folder, source_file_file_name, s3_folder, cleanup_local_copy=1):
+	
+	# Setup/Combine variables
+	local_location = source_file_folder + source_file_file_name
+	s3_location = s3_folder + source_file_file_name
 
-def getuserfiles(bucketname,username):
-	mybucket = conn.get_bucket(bucketname)
-	keys = mybucket.list(username)
-	totalsize=0.0
-	userfiles = {}
-	for key in keys:
-		value=[]
-		#value.append(key.name)
-		filename = key.name
-		filename=filename.replace(username+'/media/','')
-		value.append(key.last_modified)
-		keysize = float(key.size)/1000.0
-		value.append(str(keysize))
-		userfiles[filename]=value
-		totalsize = totalsize + float(key.size)
-	totalsize = totalsize/1000000.0
-	return userfiles,totalsize
+	# Create the object
+	obj = s3.Object(BUCKET_NAME, s3_location)
+	obj.put(Body=open(local_location, 'rb'))
+	
+	# Delete the copy
+	if cleanup_local_copy:
+		os.remove(local_location)
 
-def delete_from_s3(bucketname, username,filename):
-	mybucket = conn.get_bucket(bucketname)
-	mybucket.delete_key(username+'/media/'+filename)
+	# Get a short-term access link
+	url = get_presigned_url(s3_location, duration=3600)
 
+	return url
+
+def get_presigned_url(key, duration=3600):
+	return s3_client.generate_presigned_url('get_object',
+        Params={
+            'Bucket': BUCKET_NAME,
+            'Key': key,
+        },                                  
+        ExpiresIn=duration
+	)
