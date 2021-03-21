@@ -7,37 +7,53 @@ from myapp.s3upload import upload_to_s3_bucket_root
 from myapp.settings import PROCESSED_IMAGES_FOLDER, UNPROCESSED_IMAGES_FOLDER, S3_UNPROCESSED_FOLDER, S3_PROCESSED_FOLDER
 
 
-def applyfilter(filename, preset):
+def applyfilter(filename, presets):
 	
 	inputfile = UNPROCESSED_IMAGES_FOLDER + filename
 	outputfile = PROCESSED_IMAGES_FOLDER + filename
 
 	im = Image.open(inputfile).convert('RGB')
 
-	if preset=='gray':
+	if presets['gray']:
+		print("Applying gray filter...")
 		im = ImageOps.grayscale(im)
 
-	if preset=='edge':
-		im = ImageOps.grayscale(im)
-		im = im.filter(ImageFilter.FIND_EDGES)
-
-	if preset=='poster':
+	if presets['poster']:
+		print("Applying poster filter...")
 		im = ImageOps.posterize(im,3)
 
-	if preset=='solar':
+	if presets['solar']:
+		print("Applying solar filter...")
 		im = ImageOps.solarize(im, threshold=80) 
 
-	if preset=='blur':
-		im = im.filter(ImageFilter.GaussianBlur(radius = 5)) 
+	if presets['blur']:
+		print("Applying blur filter...")
+		im = im.filter(ImageFilter.GaussianBlur(radius = 20)) 
 	
-	if preset=='sepia':
-		sepia = []
-		r, g, b = (239, 224, 185)
-		for i in range(255):
-			sepia.extend((r*i/255, g*i/255, b*i/255))
-		im = im.convert("L")
-		im.putpalette(sepia)
-		im = im.convert("RGB")
+	# if preset=='gray':
+	# 	im = ImageOps.grayscale(im)
+
+	# if preset=='edge':
+	# 	im = ImageOps.grayscale(im)
+	# 	im = im.filter(ImageFilter.FIND_EDGES)
+
+	# if preset=='poster':
+	# 	im = ImageOps.posterize(im,3)
+
+	# if preset=='solar':
+	# 	im = ImageOps.solarize(im, threshold=80) 
+
+	# if preset=='blur':
+	# 	im = im.filter(ImageFilter.GaussianBlur(radius = 5)) 
+	
+	# if preset=='sepia':
+	# 	sepia = []
+	# 	r, g, b = (239, 224, 185)
+	# 	for i in range(255):
+	# 		sepia.extend((r*i/255, g*i/255, b*i/255))
+	# 	im = im.convert("L")
+	# 	im.putpalette(sepia)
+	# 	im = im.convert("RGB")
 
 	im.save(outputfile)
 	return outputfile
@@ -65,10 +81,13 @@ def home(request):
 	if request.method == 'POST':
 		form = UploadFileForm(request.POST, request.FILES)
 		if form.is_valid():
-			print(request.POST['preset'])
-			print(request.FILES)
-			preset=request.POST['preset']
-			original_file_link, filtered_file_link = handle_uploaded_file(request.FILES['myfilefield'],preset)
+			presets = {
+				'gray': 'gray' in request.POST,
+				'poster': 'poster' in request.POST,
+				'blur': 'blur' in request.POST,
+				'solar': 'solar' in request.POST
+			}
+			original_file_link, filtered_file_link = handle_uploaded_file(request.FILES['myfilefield'],presets)
 			return render(request, 'process.html',{'original_file_link': original_file_link, 'filtered_file_link': filtered_file_link}) #, context_instance=RequestContext(request))
 		else:
 			print("form was invalid")
