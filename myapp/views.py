@@ -12,7 +12,8 @@ def applyfilter(filename, preset):
 	inputfile = UNPROCESSED_IMAGES_FOLDER + filename
 	outputfile = PROCESSED_IMAGES_FOLDER + filename
 
-	im = Image.open(inputfile)
+	im = Image.open(inputfile).convert('RGB')
+
 	if preset=='gray':
 		im = ImageOps.grayscale(im)
 
@@ -27,7 +28,7 @@ def applyfilter(filename, preset):
 		im = ImageOps.solarize(im, threshold=80) 
 
 	if preset=='blur':
-		im = im.filter(ImageFilter.BLUR)
+		im = im.filter(ImageFilter.GaussianBlur(radius = 5)) 
 	
 	if preset=='sepia':
 		sepia = []
@@ -58,7 +59,7 @@ def handle_uploaded_file(f,preset):
 
 	print("Cleanup local copies")
 
-	return filtered_file_location
+	return original_file_location, filtered_file_location
 
 def home(request):
 	if request.method == 'POST':
@@ -67,9 +68,8 @@ def home(request):
 			print(request.POST['preset'])
 			print(request.FILES)
 			preset=request.POST['preset']
-			output_file_link = handle_uploaded_file(request.FILES['myfilefield'],preset)
-			print(output_file_link)
-			return render(request, 'process.html',{'output_file_link': output_file_link}) #, context_instance=RequestContext(request))
+			original_file_link, filtered_file_link = handle_uploaded_file(request.FILES['myfilefield'],preset)
+			return render(request, 'process.html',{'original_file_link': original_file_link, 'filtered_file_link': filtered_file_link}) #, context_instance=RequestContext(request))
 		else:
 			print("form was invalid")
 	else:

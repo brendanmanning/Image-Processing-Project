@@ -29,11 +29,21 @@
 
 <table align="center" border="0" cellpadding="0" cellspacing="0">
 <tr><td> 
-<center>
+<!-- <center>
 <h4>Image filter has been successfully applied. </h4>
-</center>
+</center> -->
 <br>
-<img src = '{{output_file_link}}' width='800px' >
+
+<div style="display: flex; flex-direction: row">
+  <div style="flex: 1; display: flex; flex-direction: column; margin-right: 16px">
+    <img src = '{{original_file_link}}' width='400px' style="flex: 1;" >
+    <p style="flex: 1; justify-self: stretch; margin-top: 24px; text-align: center; font-size: 24px; font-weight: bold;">Original</p>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; margin-left: 16px">
+    <img src = '{{filtered_file_link}}' width='400px' style="flex: 1;" >
+    <p style="flex: 1; justify-self: stretch; margin-top: 24px; text-align: center; font-size: 24px; font-weight: bold;">Filtered</p>
+  </div>
+</div>
  		
 </td></tr>
 </table>
