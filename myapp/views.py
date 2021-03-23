@@ -29,31 +29,6 @@ def applyfilter(filename, presets):
 	if presets['blur']:
 		print("Applying blur filter...")
 		im = im.filter(ImageFilter.GaussianBlur(radius = 20)) 
-	
-	# if preset=='gray':
-	# 	im = ImageOps.grayscale(im)
-
-	# if preset=='edge':
-	# 	im = ImageOps.grayscale(im)
-	# 	im = im.filter(ImageFilter.FIND_EDGES)
-
-	# if preset=='poster':
-	# 	im = ImageOps.posterize(im,3)
-
-	# if preset=='solar':
-	# 	im = ImageOps.solarize(im, threshold=80) 
-
-	# if preset=='blur':
-	# 	im = im.filter(ImageFilter.GaussianBlur(radius = 5)) 
-	
-	# if preset=='sepia':
-	# 	sepia = []
-	# 	r, g, b = (239, 224, 185)
-	# 	for i in range(255):
-	# 		sepia.extend((r*i/255, g*i/255, b*i/255))
-	# 	im = im.convert("L")
-	# 	im.putpalette(sepia)
-	# 	im = im.convert("RGB")
 
 	im.save(outputfile)
 	return outputfile
